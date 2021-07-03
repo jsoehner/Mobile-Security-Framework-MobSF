@@ -1,112 +1,95 @@
-#Base image
-FROM ubuntu:18.04
+# Base image
+FROM ubuntu:20.04
 
-#Labels and Credits
+# Labels and Credits
 LABEL \
     name="MobSF" \
     author="Ajin Abraham <ajin25@gmail.com>" \
     maintainer="Ajin Abraham <ajin25@gmail.com>" \
     contributor_1="OscarAkaElvis <oscar.alfonso.diaz@gmail.com>" \
     contributor_2="Vincent Nadal <vincent.nadal@orange.fr>" \
-    description="Mobile Security Framework is an intelligent, all-in-one open source mobile application (Android/iOS/Windows) automated pen-testing framework capable of performing static, dynamic analysis and web API testing"
+    description="Mobile Security Framework (MobSF) is an automated, all-in-one mobile application (Android/iOS/Windows) pen-testing, malware analysis and security assessment framework capable of performing static and dynamic analysis."
 
-#Environment vars
-ENV DEBIAN_FRONTEND="noninteractive"
-ENV PDFGEN_PKGFILE="wkhtmltox_0.12.5-1.bionic_amd64.deb" 
-ENV PDFGEN_URL="https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/${PDFGEN_PKGFILE}"
-ENV YARA_URL="https://github.com/rednaga/yara-python-1"
+# Environment vars
+ENV DEBIAN_FRONTEND="noninteractive" \
+    ANALYZER_IDENTIFIER="" \
+    JDK_FILE="openjdk-16.0.1_linux-x64_bin.tar.gz" \
+    JDK_FILE_ARM="openjdk-16.0.1_linux-aarch64_bin.tar.gz" \
+    WKH_FILE="wkhtmltox_0.12.6-1.focal_amd64.deb" \
+    WKH_FILE_ARM="wkhtmltox_0.12.6-1.focal_arm64.deb" \
+    JAVA_HOME="/jdk-16.0.1" \
+    PATH="$JAVA_HOME/bin:$PATH"
 
-#Postgres support is set to false by default
-ARG POSTGRES=False
-
-#Update the repository sources list
-#Install Required Libs
-#see https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#run
-RUN apt update -y && apt install -y \
+# See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#run
+RUN apt update -y && apt install -y  --no-install-recommends \
     build-essential \
-    libssl-dev \
-    libffi-dev \
-    libxml2-dev \
-    libxslt1-dev
-
-#Install Oracle JDK 8
-RUN apt install -y software-properties-common && \
-    add-apt-repository ppa:webupd8team/java -y && \
-    apt update && \
-    echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | /usr/bin/debconf-set-selections && \
-    apt install -y oracle-java8-installer
-
-#Install Python 3
-RUN \
-    apt install -y \
-    python3.6 \
-    python3-dev \
-    python3-setuptools && \
-    python3 /usr/lib/python3/dist-packages/easy_install.py pip
-
-#Install sqlite3 client and pdf generator needed dependencies
-RUN \
-    apt install -y \
+    locales \
     sqlite3 \
     fontconfig-config \
     libjpeg-turbo8 \
+    libxrender1 \
+    libfontconfig1 \
+    libxext6 \
     fontconfig \
-    xorg \
-    xfonts-75dpi
+    xfonts-75dpi \
+    xfonts-base \
+    python3.9 \
+    python3-dev \
+    python3-pip \
+    wget \
+    android-tools-adb
 
-#Install git
-RUN \
-    apt install -y \
-    git
+# Set locales
+RUN locale-gen en_US.UTF-8
+ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
-#Install wkhtmltopdf for PDF Reports
-WORKDIR /tmp
-RUN wget ${PDFGEN_URL} && \
-    dpkg -i ${PDFGEN_PKGFILE}
-   
-#Add MobSF master
-COPY . /root/Mobile-Security-Framework-MobSF
+# Install wkhtmltopdf & OpenJDK
+ARG TARGETPLATFORM
 
-#Enable Use Home Directory
-WORKDIR /root/Mobile-Security-Framework-MobSF/MobSF
-RUN sed -i 's/USE_HOME = False/USE_HOME = True/g' settings.py
+COPY scripts/install_java_wkhtmltopdf.sh .
+RUN ./install_java_wkhtmltopdf.sh
 
-#Kali fix to support 32 bit execution
-WORKDIR /root/Mobile-Security-Framework-MobSF/scripts
-RUN ./kali_fix.sh
-
-#Install Dependencies
 WORKDIR /root/Mobile-Security-Framework-MobSF
-RUN pip3 install -r requirements.txt
 
-#check if Postgres support must be enabled 
-WORKDIR /root/Mobile-Security-Framework-MobSF/scripts
-RUN chmod +x ./postgres_support.sh; sync; ./postgres_support.sh $POSTGRES
+# Install Requirements
+COPY requirements.txt .
+RUN pip3 install --upgrade setuptools pip && \
+    pip3 install --quiet --no-cache-dir -r requirements.txt
 
-#Install apkid dependencies, and enable it 
-WORKDIR /tmp
-RUN git clone --recursive ${YARA_URL} yara-python && \
-    cd yara-python && \
-    python3 setup.py build --enable-dex install && \
-    rm -fr /tmp/yara-python && \
-    sed -i 's/APKID_ENABLED.*/APKID_ENABLED = True/' /root/Mobile-Security-Framework-MobSF/MobSF/settings.py
-
-#Cleanup
+# Cleanup
 RUN \
-    apt remove -y git && \
+    apt remove -y \
+        libssl-dev \
+        libffi-dev \
+        libxml2-dev \
+        libxslt1-dev \
+        python3-dev \
+        wget && \
     apt clean && \
     apt autoclean && \
-    apt autoremove -y
-RUN rm -rf /var/lib/apt/lists/* /tmp/* > /dev/null 2>&1
+    apt autoremove -y && \
+    rm -rf /var/lib/apt/lists/* /tmp/* > /dev/null 2>&1
 
-#Expose MobSF Port
-EXPOSE 8000
+# Copy source code
+COPY . .
 
+# Set adb binary path and apktool directory
+RUN sed -i "s#ADB_BINARY = ''#ADB_BINARY = '/usr/bin/adb'#" mobsf/MobSF/settings.py && \
+    mkdir -p /root/.local/share/apktool/framework
 
-WORKDIR /root/Mobile-Security-Framework-MobSF
+# Postgres support is set to false by default
+ARG POSTGRES=False
 
-#Run Unit Tests
-RUN python3 manage.py test
+ENV POSTGRES_USER=postgres
+ENV POSTGRES_PASSWORD=password
+ENV POSTGRES_DB=mobsf
+ENV POSTGRES_HOST=postgres
 
-#Run MobSF
-CMD ["python3","manage.py","runserver","0.0.0.0:8000"]
+# Check if Postgres support needs to be enabled
+RUN ./scripts/postgres_support.sh $POSTGRES
+
+# Expose MobSF Port and Proxy Port
+EXPOSE 8000 8000 1337 1337
+
+# Run MobSF
+CMD ["/root/Mobile-Security-Framework-MobSF/scripts/entrypoint.sh"]

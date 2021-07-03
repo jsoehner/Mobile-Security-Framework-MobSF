@@ -1,22 +1,17 @@
 <!-- Thank you for your contribution to MobSF! -->
 
-### What was a problem?
+### Describe the Pull Request
 
 ```
-DESCRIBE HERE
+DESCRIBE THE DETAILS OF PULL REQUEST HERE
 ```
 
-### How this PR fixes the problem?
+### Checklist for PR
 
-```
-DESCRIBE HERE
-```
-
-### Check lists (check `x` in `[ ]` of list items)
-
-- [ ] Run MobSF unit tests (http://your-mobsf-@ip:8000/tests/ or python3 manage.py test)
-- [ ] Tested Working on Linux, Mac, and Windows
-- [ ] Coding style (indentation, etc)
+- [ ] Run MobSF unit tests and lint `tox -e lint,test`
+- [ ] Tested Working on Linux, Mac, Windows, and Docker
+- [ ] Add unit test for any new Web API (Refer: `StaticAnalyzer/tests.py`)
+- [ ] Make sure tests are passing on your PR [![MobSF tests](https://github.com/MobSF/Mobile-Security-Framework-MobSF/workflows/MobSF%20tests/badge.svg?branch=master)](https://github.com/MobSF/Mobile-Security-Framework-MobSF/actions)
 
 ### Additional Comments (if any)
 
