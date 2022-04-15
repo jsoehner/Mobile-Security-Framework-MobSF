@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def set_ext_api(file_path):
-    """Smart Function to set Extenstion."""
+    """Smart Function to set Extension."""
     ext = file_path.split('.')[-1]
     if ext == 'plist':
         return 'plist'
@@ -103,9 +103,12 @@ def run(request, api=False):
                 dat = flip.read()
         elif typ == 'plist':
             file_format = 'json'
-            dat = biplist.readPlist(sfile)
             try:
+                dat = biplist.readPlist(sfile)
                 dat = json.dumps(dat, indent=4, sort_keys=True)
+            except biplist.InvalidPlistException:
+                file_format = 'xml'
+                dat = Path(sfile).read_text()
             except Exception:
                 pass
         elif typ == 'db':
