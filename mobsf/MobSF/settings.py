@@ -68,6 +68,7 @@ ALLOWED_EXTENSIONS = {
     '.zip': 'application/zip',
     '.tar': 'application/x-tar',
     '.apk': 'application/octet-stream',
+    '.ipa': 'application/octet-stream',
 }
 # =============ALLOWED MIMETYPES=================
 APK_MIME = [
@@ -108,9 +109,8 @@ VIRUS_TOTAL_BASE_URL = 'https://www.virustotal.com/vtapi/v2/file/'
 EXODUS_URL = 'https://reports.exodus-privacy.eu.org'
 APPMONSTA_URL = 'https://api.appmonsta.com/v1/stores/android/details/'
 ITUNES_URL = 'https://itunes.apple.com/lookup'
-GITHUB_URL = ('https://raw.githubusercontent.com/'
-              'MobSF/Mobile-Security-Framework-MobSF/'
-              'master/mobsf/MobSF/init.py')
+GITHUB_URL = ('https://github.com/MobSF/Mobile-Security-Framework-MobSF/'
+              'releases/latest')
 FRIDA_SERVER = 'https://api.github.com/repos/frida/frida/releases/tags/'
 GOOGLE = 'https://www.google.com'
 BAIDU = 'https://www.baidu.com/'
@@ -149,7 +149,7 @@ DATABASES = {
 # End Postgres support
 """
 # ===============================================
-
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 DEBUG = True
 DJANGO_LOG_LEVEL = DEBUG
 ALLOWED_HOSTS = ['127.0.0.1', 'mobsf', '*']
@@ -341,6 +341,8 @@ else:
     # Android 3P Tools
     JADX_BINARY = ''
     BACKSMALI_BINARY = ''
+    VD2SVG_BINARY = ''
+    BATIK_BINARY = ''
     APKTOOL_BINARY = ''
     ADB_BINARY = ''
 

@@ -6,6 +6,7 @@
     {% block extra_css %}
     <!-- DataTables -->
     <link rel="stylesheet" href="{% static "adminlte/plugins/datatables-bs4/dataTables.bootstrap4.min.css" %}">
+    <link href="{% static "adminlte/plugins/sweetalert2/sweetalert2.min.css" %}" rel="stylesheet">
      <style type="text/css" media="print">
         @page { size: landscape; }
         @media print {
@@ -388,22 +389,35 @@
 <section class="content">
       <div class="container-fluid">
         <div class="row">
-            <div class="col-lg-12">
+          
+          <div class="col-lg-4">
             <div class="card">
               <div class="card-body">
                 <p>
                 <strong><i class="fas fa-cog"></i> SCAN OPTIONS</strong>
                 </p>
-                <p align="center">
                  <a role="button" class="btn btn-info" href="../static_analyzer_ios/?checksum={{ md5 }}&amp;name={{ file_name }}&amp;type=ipa&amp;rescan=1" ><i class="fa fa-sync"></i> Rescan</a>
-                 <a role="button" class="btn btn-primary" data-target="#mplist" data-toggle="modal" href="#"><i class="fa fa-list"></i> View Info.plist</a>
-                 <a role="button" class="btn btn-primary" data-target="#mstrings" data-toggle="modal" href="#"><i class="fas fa-font"></i> View Strings</a>
-                 <a target="_blank" href="../view_file_ios/?file=classdump.txt&amp;md5={{ md5 }}&amp;type=ios" class="btn btn-warning" role="button"><i class="fa fa-code"></i> View Class Dump</a>
+                 <a id="supbtn" onclick="list_suppressions()" role="button" class="btn btn-primary" data-target="#sup_list" data-toggle="modal" href="#"><i class="fa fa-list"></i> Manage Suppressions</a>
                 </p>
-              
               </div>
             </div><!-- /.card -->
             </div>
+            <div class="col-lg-8">
+              <div class="card">
+                <div class="card-body">
+                    <p>
+                    <strong><i class="fas fa-file-code"></i> DECOMPILED ASSETS</strong>
+                  </p>
+                  <p>
+                    <a role="button" class="btn btn-primary" data-target="#mplist" data-toggle="modal" href="#"><i class="fa fa-list"></i> View Info.plist</a>
+                    <a role="button" class="btn btn-primary" data-target="#mstrings" data-toggle="modal" href="#"><i class="fas fa-font"></i> View Strings</a>
+                    <a target="_blank" href="../view_file_ios/?file=classdump.txt&amp;md5={{ md5 }}&amp;type=ios" class="btn btn-warning" role="button"><i class="fa fa-code"></i> View Class Dump</a>
+                    <a href="../generate_downloads/?hash={{ md5 }}&amp;file_type=ipa" class="btn btn-warning"> <i class="fa fa-download"></i> Download IPA</a>
+                 </p>
+                </div>
+              </div>
+            </div>
+
             <!-- end row -->
             </div>
         </div>
@@ -606,7 +620,7 @@
              <strong><i class="fa fa-code"></i> IPA BINARY CODE ANALYSIS</strong>
              </p>
               <div class="table-responsive">
-               <table class="table table-bordered table-hover table-striped">
+               <table id="table_code" class="table table-bordered table-hover table-striped">
                   <thead>
                       <tr>
                           <th>NO</th>
@@ -614,7 +628,7 @@
                           <th>SEVERITY</th>
                           <th>STANDARDS</th>
                           <th>DESCRIPTION</th>
-
+                          <th>OPTIONS</th>
                       </tr>
                   </thead>
                      <tbody>
@@ -656,6 +670,18 @@
                       </td>
                       <td>
                          {{ details|key:"detailed_desc" }}
+                      </td>
+                      <td>
+
+                        <div class="dropdown show">
+                          <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <i class="fa fa-eye-slash"></i>
+                          </a>
+                          <div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+                            <a style="cursor:pointer;" class="dropdown-item" onclick="suppress('{{issue | escapejs }}', false, $(this.closest('tr')))">Suppress the rule <b>{{ issue }}</b> in <b>{{bundle_id}}</b></a>
+                          </div>
+                        </div>
+    
                       </td>
                     </tr>
                     {% endfor %}
@@ -1254,6 +1280,35 @@
     </div>
 
 
+    <!--Modals-->
+<div class="modal" id="sup_list" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Suppression Rules</h4>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table id="sup_table" class="table table-bordered table-hover table-striped">
+          <thead>
+            <tr>
+                <th>Suppression Type</th>
+                <th>By Rule ID</th>
+                <th>By Files</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- /.modal-content -->
+  </div>
+  <!-- /.modal-dialog -->
+</div>
+
 
 {% endblock %}
 <!--end new UI-->
@@ -1265,7 +1320,20 @@
 <script src="{% static "amcharts/maps.js" %}"></script>
 <script src="{% static "amcharts/worldIndiaLow.js" %}"></script>
 <script src="{% static "amcharts/animated.js" %}"></script>
+<script src="{% static "adminlte/plugins/sweetalert2/sweetalert2.min.js" %}"></script>
 <script>
+  var list_suppressions_url = '{% url 'list_suppressions' %}';
+  var suppress_by_files_url = '{% url 'suppress_by_files' %}';
+  var suppress_by_rule_url = '{% url 'suppress_by_rule' %}';
+  var delete_suppression_url = '{% url 'delete_suppression' %}';
+</script>
+<script src="{% static "others/js/suppression.js" %}"></script>
+<script>
+  // Globals
+  const csrf = '{{ csrf_token }}'
+  const pkg = '{{ bundle_id }}'
+  const hash = '{{ md5 }}'
+  
   $(function () {
     // Datatable
     $('table').DataTable({

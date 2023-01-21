@@ -13,10 +13,10 @@ where python >nul 2>&1 && (
   ) else (
     exit /b
   )
-  echo %var%|findstr /R "[3].[89]" >nul
+  echo %var%|findstr /R "[3].[8910]" >nul
   if errorlevel 1 (
       if "%var%"=="" goto redo
-      echo [ERROR] MobSF dependencies require Python 3.8/3.9. Your python points to %var%
+      echo [ERROR] MobSF dependencies require Python 3.8-3.10. Your python points to %var%
       exit /b
   ) else (
       echo [INSTALL] Found %var%
@@ -37,7 +37,7 @@ where python >nul 2>&1 && (
     echo [INSTALL] Found OpenSSL executable
   ) else (
    echo [ERROR] OpenSSL executable not found in [C:\\Program Files\\OpenSSL-Win64\\bin\\openssl.exe]
-   echo [INFO] Install OpenSSL non-light version - https://slproweb.com/download/Win64OpenSSL-3_0_0.exe
+   echo [INFO] Install OpenSSL non-light version [Win64 OpenSSL v3.x] - https://slproweb.com/products/Win32OpenSSL.html
    pause
    exit /b
   )
