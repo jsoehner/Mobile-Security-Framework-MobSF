@@ -178,6 +178,12 @@
                 </a>
               </li>
               <li class="nav-item">
+                <a href="#secrets" class="nav-link">
+                  <i class="fas fa-key nav-icon"></i>
+                  <p>Hardcoded Secrets</p>
+                </a>
+              </li>
+              <li class="nav-item">
                 <a href="#strings" class="nav-link">
                   <i class="fas fa-font nav-icon"></i>
                   <p>Strings</p>
@@ -233,7 +239,7 @@
             </ul>
           </li>
             <li class="nav-item">
-              <a href="../pdf/?md5={{ md5 }}" class="nav-link">
+              <a href="{% url "pdf" checksum=md5 %}" class="nav-link">
               <i class="nav-icon fas fa-file-pdf"></i>
               <p>
                 PDF Report
@@ -283,10 +289,7 @@
                 <div class="row">
                 <div class="col-2">
                   <p><strong><i class="fas fa-check-double"></i> APP SCORES</strong></p>
-                  <img id="app_icon" src="{% if icon_found %}/download/{{ md5 }}-icon.png{% else %}{% static 'img/no_icon.png' %}{% endif %}"/>
-                  {% if icon_hidden %}
-                    <strong>Hidden Icon!</strong>
-                  {% endif %}
+                  <img id="app_icon" src="{% if icon_path %}/download/{{ icon_path }}{% else %}{% static 'img/no_icon.png' %}{% endif %}"/>
                   <p>
                   {% if average_cvss %}
                   <span class="badge bg-info">Average CVSS</span> <b>{{ average_cvss }} </b><br/>
@@ -298,7 +301,7 @@
                     <span class="badge bg-success">Trackers Detection</span> <strong>{{ trackers.detected_trackers }}/{{ trackers.total_trackers }}</strong><br/>
                   {% endif %}  
                 </p>
-                  <p> <a href="../appsec_dashboard/{{ md5 }}/" class="btn btn-outline-primary btn-sm" role="button"><i class="fas fa-user-shield"></i> MobSF Scorecard</a></p>
+                  <p> <a href="{% url 'appsec_dashboard' checksum=md5 %}" class="btn btn-outline-primary btn-sm" role="button"><i class="fas fa-user-shield"></i> MobSF Scorecard</a></p>
 
                 </div>
                 <div class="col-6">
@@ -533,9 +536,9 @@
                 <strong><i class="fas fa-cog"></i> SCAN OPTIONS</strong>
                 </p>
                 <p align="center">
-                  <a href="../static_analyzer/?checksum={{ md5 }}&amp;name={{ file_name }}&amp;type=zip&amp;rescan=1" class="btn btn-info" role="button"><i class="fa fa-sync"></i> Rescan</a>
+                  <a href="{% url 'static_analyzer' checksum=md5 %}?rescan=1" class="btn btn-info" role="button"><i class="fa fa-sync"></i> Rescan</a>
                   <a id="supbtn" onclick="list_suppressions()" role="button" class="btn btn-primary" data-target="#sup_list" data-toggle="modal" href="#"><i class="fa fa-list"></i> Manage Suppressions</a>
-                  <a target="_blank" href="../manifest_view/?md5={{ md5 }}&amp;type={{ app_type }}&amp;bin=0" role="button" class="btn btn-primary"><i class="fa fa-eye"></i>  View AndroidManifest.xml</a>
+                  <a target="_blank" href="{% url "manifest_view" checksum=md5 %}?type={{ app_type }}" role="button" class="btn btn-primary"><i class="fa fa-eye"></i>  View AndroidManifest.xml</a>
                   <a href="{% url "tree_view" %}?md5={{ md5 }}&amp;type=java" class="btn btn-info" role="button"><i class="fa fa-code"></i> View Source</a>
                 </p>
               </div>
@@ -734,6 +737,42 @@
              <strong><i class="fas fa-lock"></i> NETWORK SECURITY</strong>
              </p>
               <div class="table-responsive">
+                {% if network_security and 'network_summary' in network_security and network_security.network_summary|length > 0%}
+                <div class="row">
+                  <div class="col-sm-3 col-6">
+                  <div class="description-block border-right">
+                  <span class="text-danger">HIGH</span>
+                  <h5 class="description-header">{{ network_security.network_summary.high }}</h5>
+                  </div>
+                  </div>
+                  
+                  <div class="col-sm-3 col-6">
+                  <div class="description-block border-right">
+                  <span class="text-warning"></i> WARNING</span>
+                  <h5 class="description-header">{{ network_security.network_summary.warning }}</h5>
+                  </div>
+                  
+                  </div>
+                  
+                  <div class="col-sm-3 col-6">
+                  <div class="description-block border-right">
+                  <span class="text-info">INFO</span>
+                  <h5 class="description-header">{{ network_security.network_summary.info }}</h5>
+                  </div>
+                  
+                  </div>
+
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block">
+                    <span class="text-success">SECURE</span>
+                    <h5 class="description-header">{{ network_security.network_summary.secure }}</h5>
+                    </div>
+                    
+                    </div>
+                    
+                  
+                  </div>
+                  {% endif %}
                 <table id="table_network" class="table table-bordered table-hover table-striped">
                       <thead>
                       <tr>
@@ -744,8 +783,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                                      
-                    {% for item in network_security %}
+                    {% if network_security and 'network_findings' in network_security %}
+                    {% for item in network_security.network_findings %}
                       <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
@@ -770,8 +809,11 @@
    
                        </tr>
                      {% endfor %}
+                     {% endif %}
                     </tbody>
                   </table>
+                 
+                    
                   </div>
           </div>
         </div><!-- /.card -->
@@ -792,6 +834,42 @@
              <strong><i class="fas fa-search"></i> MANIFEST ANALYSIS</strong>
              </p>
               <div class="table-responsive">
+                {% if manifest_analysis and 'manifest_summary' in manifest_analysis and manifest_analysis.manifest_summary|length > 0%}
+                <div class="row">
+                  <div class="col-sm-3 col-6">
+                  <div class="description-block border-right">
+                  <span class="text-danger">HIGH</span>
+                  <h5 class="description-header">{{ manifest_analysis.manifest_summary.high }}</h5>
+                  </div>
+                  </div>
+                  
+                  <div class="col-sm-3 col-6">
+                  <div class="description-block border-right">
+                  <span class="text-warning"></i> WARNING</span>
+                  <h5 class="description-header">{{ manifest_analysis.manifest_summary.warning }}</h5>
+                  </div>
+                  
+                  </div>
+                  
+                  <div class="col-sm-3 col-6">
+                  <div class="description-block border-right">
+                  <span class="text-info">INFO</span>
+                  <h5 class="description-header">{{ manifest_analysis.manifest_summary.info }}</h5>
+                  </div>
+                  
+                  </div>
+
+                  <div class="col-sm-3 col-6">
+                    <div class="description-block">
+                    <span class="text-disabled">SUPPRESSED</span>
+                    <h5 class="description-header">{{ manifest_analysis.manifest_summary.suppressed }}</h5>
+                    </div>
+                    
+                    </div>
+                    
+                  
+                  </div>
+                  {% endif %}
                 <table id="table_manifest" class="table table-bordered table-hover table-striped">
                       <thead>
                       <tr>
@@ -803,8 +881,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                                      
-                    {% for item in manifest_analysis %}
+                      {% if manifest_analysis and 'manifest_findings' in manifest_analysis %}
+                      {% for item in manifest_analysis.manifest_findings %}
                       <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
@@ -837,8 +915,11 @@
                         </td>
                        </tr>
                      {% endfor %}
+                     {% endif %}
                     </tbody>
                   </table>
+                 
+
                   </div>
           </div>
         </div><!-- /.card -->
@@ -859,6 +940,50 @@
              <strong><i class="fas fa-code"></i> CODE ANALYSIS</strong>
              </p>
               <div class="table-responsive">
+                {% if code_analysis and 'summary' in code_analysis and code_analysis.summary|length > 0 %}
+            <div class="row">
+              <div class="col-sm-2 col-6">
+              <div class="description-block border-right">
+              <span class="text-danger">HIGH</span>
+              <h5 class="description-header">{{ code_analysis.summary.high }}</h5>
+              </div>
+              </div>
+              
+              <div class="col-sm-2 col-6">
+              <div class="description-block border-right">
+              <span class="text-warning"></i> WARNING</span>
+              <h5 class="description-header">{{ code_analysis.summary.warning }}</h5>
+              </div>
+              
+              </div>
+              
+              <div class="col-sm-2 col-6">
+              <div class="description-block border-right">
+              <span class="text-info">INFO</span>
+              <h5 class="description-header">{{ code_analysis.summary.info }}</h5>
+              </div>
+              
+              </div>
+              
+              <div class="col-sm-2 col-6">
+                <div class="description-block border-right">
+                <span class="text-success">SECURE</span>
+                <h5 class="description-header">{{ code_analysis.summary.secure }}</h5>
+                </div>
+                
+                </div>
+
+              <div class="col-sm-2 col-6">
+                <div class="description-block">
+                <span class="text-disabled">SUPPRESSED</span>
+                <h5 class="description-header">{{ code_analysis.summary.suppressed }}</h5>
+                </div>
+                
+                </div>
+                
+              
+              </div>
+              {% endif %}
                 <table id="table_code" class="table table-bordered table-hover table-striped">
                     <thead>
                     <tr>
@@ -871,7 +996,8 @@
                   </tr>
                     </thead>
                     <tbody>
-               {% for rule, details in code_analysis.items %}
+                  {% if code_analysis and 'findings' in code_analysis %}
+                  {% for rule, details in code_analysis.findings.items %}
                   <tr>
                   <td>{{ forloop.counter }}</td>
                   <td>
@@ -933,8 +1059,11 @@
                   </td>
                 </tr>    
               {% endfor %} 
+              {% endif %}
               </tbody>
             </table>
+            
+
             </div>
           </div>
         </div><!-- /.card -->
@@ -1058,6 +1187,35 @@
               <div class="table-responsive">
                 <div id="chartdiv"></div>
             </div>
+            
+            <div class="table-responsive">
+              {% if domains %}
+              <p></br>This app may communicate with the following OFAC sanctioned list of countries.</p>
+             <table id="table_ofac" class="table table-bordered table-hover table-striped">
+                  <thead>
+                  <tr>
+                     <th>DOMAIN</th>
+                     <th>COUNTRY/REGION</th>
+                  </tr>
+                 </thead>
+                 <tbody>
+                 {% for domain, details in domains.items %}
+                 {% if details|key:"ofac" == True %}
+                  <tr><td>{{domain}}</td>
+                  <td>
+                    <strong>IP: </strong>{{details|key:"geolocation"|key:"ip"}}  <br/>
+                    <strong>Country: </strong>{{details|key:"geolocation"|key:"country_long"}} <br/>
+                    <strong>Region: </strong>{{details|key:"geolocation"|key:"region"}} <br/>
+                    <strong>City: </strong>{{details|key:"geolocation"|key:"city"}} <br/>
+                  </td>
+                  </tr>
+                  {% endif %}
+                  {% endfor %}
+                </tbody>
+            </table>
+             {% endif %}
+            </div>
+
           </div>
         </div><!-- /.card -->
         </div>
@@ -1310,31 +1468,61 @@
      </div>
  </section>
   <!-- ===========================end trackers ================================== -->
-<a id="strings" class="anchor"></a>
-<section class="content">
-  <div class="container-fluid">
-    <div class="row">
-        <div class="col-lg-12">
-        <div class="card">
-          <div class="card-body">
-             <p>
-             <strong><i class="fas fa-font"></i> STRINGS</strong>
-             </p>
-               <div class="list-group">
-                  <p>  
-                    {% for val in strings %}
-                     {{ val }}<br/>
-                    {% endfor %}                  
-                  </p>
+  <a id="secrets" class="anchor"></a>
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+          <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+               <p>
+               <strong><i class="fas fa-key"></i> POSSIBLE HARDCODED SECRETS</strong>
+               </p>
+                 <div class="list-group">
+                    <p>  
+                      {% for val in secrets %}
+                       {{ val }}<br/>
+                      {% endfor %}                  
+                    </p>
+                </div>
               </div>
             </div>
+          </div><!-- /.card -->
           </div>
-        </div><!-- /.card -->
-        </div>
-        <!-- end row -->
-        </div>
-</section>
- <!-- ===========================end strings ================================== -->
+          <!-- end row -->
+          </div>
+  </section>
+   <!-- ===========================end secrets ================================== -->
+  <a id="strings" class="anchor"></a>
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+          <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+               <p>
+               <strong><i class="fas fa-font"></i> STRINGS</strong>
+               </p>
+                 <div class="list-group">
+                   <p><strong>From Code</strong></p>
+                  <p>  
+                    {% for key, val in strings.items %}
+                      {% if key == 'strings_code' %}
+                        {% for v in val %}
+                          {{ v }}<br/>
+                        {% endfor %}
+                      {% endif %}
+                    {% endfor %}                  
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div><!-- /.card -->
+          </div>
+          <!-- end row -->
+          </div>
+  </section>
+   <!-- ===========================end strings ================================== -->
 <a id="activities" class="anchor"></a>
 <section class="content">
   <div class="container-fluid">
@@ -1539,6 +1727,9 @@
 </script>
 <script src="{% static "others/js/suppression.js" %}"></script>
 <script>
+
+  // Remove rescan parameter
+  window.history.replaceState({}, '', window.location.pathname);
 
   // Globals
   const csrf = '{{ csrf_token }}'

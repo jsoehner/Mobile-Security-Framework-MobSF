@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def run(request, api=False):
     """View the source of a file."""
     try:
-        logger.info('View Android Source File')
+        logger.info('View Java Source File')
         exp = 'Error Description'
         if api:
             fil = request.POST['file']
@@ -52,7 +52,7 @@ def run(request, api=False):
             try:
                 src, syntax, _ = find_java_source_folder(base)
             except StopIteration:
-                msg = 'Invalid Directory Structure'
+                msg = 'Invalid directory or file extension'
                 return print_n_send_error_response(request, msg, api)
 
         sfile = src / fil
